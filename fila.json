@@ -3,8 +3,21 @@
     "id": "exemplo-2026-10-15-carrossel",
     "tipo": "carrossel",
     "data_hora": "2026-10-15T10:00:00-03:00",
-    "midias": ["midias/exemplo/01.jpg", "midias/exemplo/02.jpg"],
+    "midias": [
+      "midias/exemplo/01.jpg",
+      "midias/exemplo/02.jpg"
+    ],
     "legenda": "Texto de exemplo. Apague este item e troque pelos reais.",
     "status": "exemplo"
+  },
+  {
+    "id": "teste-story-2026-10-08",
+    "tipo": "story",
+    "data_hora": "2026-10-08T22:47:00-03:00",
+    "midias": [
+      "midias/teste/story-teste.jpg"
+    ],
+    "legenda": "",
+    "status": "pendente"
   }
 ]
