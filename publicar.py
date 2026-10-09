@@ -13,13 +13,15 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-API = "https://graph.facebook.com/v21.0"
+API = os.environ.get("IG_API", "https://graph.instagram.com/v25.0")
 FILA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fila.json")
 TOLERANCIA = timedelta(hours=6)  # item mais atrasado que isso não é publicado
 DRY = "--dry-run" in sys.argv
 
 
 def url_midia(caminho):
+    if caminho.lower().endswith(".png"):
+        raise RuntimeError(f"{caminho}: a API só aceita imagem JPEG; converta para .jpg")
     repo = os.environ.get("GITHUB_REPOSITORY", "OWNER/REPO")
     return f"https://raw.githubusercontent.com/{repo}/main/{caminho}"
 

@@ -12,13 +12,16 @@ Tipos aceitos: `feed` (1 imagem), `carrossel`, `story` (imagem ou .mp4), `reel` 
 O repositório precisa ser **público**: a Meta baixa as mídias por URL raw do GitHub.
 
 ## Configuração (uma vez, feita por você)
-1. Criar o repositório público no GitHub e subir esta pasta.
-2. Instagram profissional ligado a uma Página do Facebook.
-3. Em developers.facebook.com: criar um app, adicionar o produto de publicação do Instagram, gerar um token de longa duração com permissão de publicar conteúdo e anotar o ID da conta do Instagram.
-4. No repositório: Settings > Secrets and variables > Actions > criar `IG_USER_ID` e `IG_TOKEN`. Nunca coloque o token em arquivos nem no chat.
-5. Token de longa duração vence em ~60 dias: anote a data para renovar.
+Usa a "Instagram API with Instagram Login": não precisa de Página do Facebook, só de conta Instagram **profissional** (comercial ou criador).
+1. Acesse developers.facebook.com, entre com o Facebook e crie um app (tipo "Empresa"/Business).
+2. No painel do app, adicione o produto **Instagram** e abra "Configuração da API com login do Instagram".
+3. Em Funções do app, adicione o @zynit.oficial como testador/desenvolvedor e **aceite o convite** em instagram.com > Configurações > Apps e sites (aba de convites de testador). Sem isso o token não funciona.
+4. Na configuração da API, clique em **Gerar token** ao lado da conta, autorize e copie o token (vale 60 dias). Anote também o **ID da conta do Instagram** mostrado ali.
+5. No GitHub: repositório > Settings > Secrets and variables > Actions > New repository secret: `IG_TOKEN` (o token) e `IG_USER_ID` (o ID). Nunca cole o token em arquivos nem no chat.
+6. Renove o token antes de 60 dias (a doc da Meta tem um endpoint de renovação); anote a data.
 
-Os nomes de permissões e a versão da API (`v21.0` em `publicar.py`) vêm do que conheço da documentação; confira na documentação atual da Meta antes do primeiro uso.
+Regras da API: imagens **JPEG** (não PNG), mídia em URL pública, até 100 posts por 24h, carrossel até 10 itens.
+Confira o passo a passo atual em developers.facebook.com (documentação "Instagram Platform"): os nomes dos menus mudam.
 
 ## Testar sem publicar
 ```bash
