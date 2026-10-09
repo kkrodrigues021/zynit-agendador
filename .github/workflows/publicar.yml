@@ -20,12 +20,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Diagnóstico da conta
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          IG_USER_ID: ${{ secrets.IG_USER_ID }}
-          IG_TOKEN: ${{ secrets.IG_TOKEN }}
-        run: python publicar.py --whoami
       - name: Publicar itens vencidos
         env:
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
