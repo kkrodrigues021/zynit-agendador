@@ -1,0 +1,10 @@
+[
+  {
+    "id": "exemplo-2026-10-15-carrossel",
+    "tipo": "carrossel",
+    "data_hora": "2026-10-15T10:00:00-03:00",
+    "midias": ["midias/exemplo/01.png", "midias/exemplo/02.png"],
+    "legenda": "Texto de exemplo. Apague este item e troque pelos reais.",
+    "status": "exemplo"
+  }
+]
