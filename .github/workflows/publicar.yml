@@ -28,10 +28,6 @@ jobs:
         run: python publicar.py
       - name: Salvar status da fila
         run: |
-          if ! git diff --quiet fila.json; then
-            git config user.name "agendador"
-            git config user.email "agendador@users.noreply.github.com"
-            git add fila.json
-            git commit -m "Atualiza status da fila"
-            git push
-          fi
+          git config user.name "agendador"
+          git config user.email "agendador@users.noreply.github.com"
+          python salvar_fila.py
