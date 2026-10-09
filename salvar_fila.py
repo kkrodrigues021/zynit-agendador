@@ -6,6 +6,7 @@ Fluxo: compara fila.json local (depois de publicar) com o commit de origem do jo
 diferenças, e reaplica essas diferenças sobre a versão mais nova do repositório, com novas tentativas.
 """
 import json
+import os
 import subprocess
 import sys
 import time
@@ -22,6 +23,8 @@ def ler(texto):
 
 
 def main():
+    if len(sys.argv) > 1:
+        os.chdir(sys.argv[1])  # pasta do repositório de conteúdo
     base = {i["id"]: i for i in ler(git("show", "HEAD:fila.json").stdout)}
     with open("fila.json", encoding="utf-8-sig") as f:
         local = ler(f.read())
