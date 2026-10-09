@@ -1,0 +1,23 @@
+name: Teste do acesso ao conteúdo
+
+on:
+  workflow_dispatch:
+
+jobs:
+  teste:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Abrir o repositório privado
+        uses: actions/checkout@v4
+        with:
+          repository: kkrodrigues021/zynit-conteudo
+          token: ${{ secrets.CONTEUDO_TOKEN }}
+          path: conteudo
+      - name: Conferir leitura e escrita
+        run: |
+          ls conteudo
+          git -C conteudo config user.name teste
+          git -C conteudo config user.email teste@users.noreply.github.com
+          git -C conteudo commit --allow-empty -m "Teste de escrita do agendador"
+          git -C conteudo push origin HEAD:main
+          echo "ESCRITA OK"
