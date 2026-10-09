@@ -65,10 +65,12 @@ def criar(uid, params):
     return cid
 
 
-def publicar_item(item):
+def publicar_item(item, publicar_agora=True):
+    """Cria o container na API e publica. Com publicar_agora=False só cria e espera ficar pronto (teste)."""
     uid = os.environ["IG_USER_ID"]
     tipo, midias, legenda = item["tipo"], item["midias"], item.get("legenda", "")
-    urls = urls_publicas(midias)
+    capa = item.get("capa")
+    urls = urls_publicas(midias + ([capa] if capa else []))
     if tipo == "feed":
         cid = criar(uid, {"image_url": urls[0], "caption": legenda})
     elif tipo == "carrossel":
@@ -78,9 +80,14 @@ def publicar_item(item):
         campo = "video_url" if midias[0].lower().endswith(".mp4") else "image_url"
         cid = criar(uid, {"media_type": "STORIES", campo: urls[0]})
     elif tipo == "reel":
-        cid = criar(uid, {"media_type": "REELS", "video_url": urls[0], "caption": legenda})
+        params = {"media_type": "REELS", "video_url": urls[0], "caption": legenda, "share_to_feed": "true"}
+        if capa:
+            params["cover_url"] = urls[1]
+        cid = criar(uid, params)
     else:
         raise RuntimeError(f"tipo desconhecido: {tipo}")
+    if not publicar_agora:
+        return cid
     return chamar("POST", f"/{uid}/media_publish", {"creation_id": cid})["id"]
 
 

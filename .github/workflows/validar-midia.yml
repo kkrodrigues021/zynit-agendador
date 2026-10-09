@@ -1,0 +1,38 @@
+name: Validar mídia (não publica)
+
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: "id do item da fila"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Baixar o conteúdo (repositório privado)
+        uses: actions/checkout@v4
+        with:
+          repository: kkrodrigues021/zynit-conteudo
+          token: ${{ secrets.CONTEUDO_TOKEN }}
+          path: conteudo
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Testar na API sem publicar
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+          CONTEUDO_DIR: conteudo
+        run: python validar.py "${{ inputs.id }}"
