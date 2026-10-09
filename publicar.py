@@ -76,7 +76,19 @@ def publicar_item(item):
     return chamar("POST", f"/{uid}/media_publish", {"creation_id": cid})["id"]
 
 
+def quem_sou():
+    r = chamar("GET", "/me", {"fields": "user_id,username"})
+    uid = os.environ.get("IG_USER_ID", "")
+    print("username:", r.get("username"))
+    print("user_id da API:", r.get("user_id"))
+    print("IG_USER_ID bate com user_id:", str(r.get("user_id")) == uid.strip())
+    print("tamanho do IG_USER_ID:", len(uid))
+
+
 def main():
+    if "--whoami" in sys.argv:
+        quem_sou()
+        return
     with open(FILA, encoding="utf-8") as f:
         fila = json.load(f)
     agora = datetime.now(timezone.utc)
