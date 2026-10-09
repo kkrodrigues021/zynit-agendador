@@ -89,7 +89,7 @@ def main():
     if "--whoami" in sys.argv:
         quem_sou()
         return
-    with open(FILA, encoding="utf-8") as f:
+    with open(FILA, encoding="utf-8-sig") as f:
         fila = json.load(f)
     agora = datetime.now(timezone.utc)
     mudou = False
