@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agendador ZYNIT</title>
+<style>
+  :root {
+    --bg: #f6f6f9; --card: #ffffff; --txt: #16161d; --mut: #6b6b7b; --line: #e3e3ec;
+    --acc: #5b4cf0; --ok: #1a8f4c; --pend: #b7791f; --err: #c53030; --late: #7a7a8a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #101015; --card: #1a1a22; --txt: #f0f0f6; --mut: #9a9aae; --line: #2b2b37;
+      --acc: #8b7fff; --ok: #4cc58a; --pend: #e0a93b; --err: #f07070; --late: #9a9aae; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--txt); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .sub { color: var(--mut); margin: 0 0 20px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card, section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  section { margin-bottom: 20px; }
+  .num { font-size: 28px; font-weight: 700; line-height: 1.1; }
+  .lbl { color: var(--mut); font-size: 13px; }
+  .bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; }
+  button { background: var(--card); color: var(--txt); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
+  button:hover { border-color: var(--acc); }
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .dow { text-align: center; color: var(--mut); font-size: 12px; padding: 4px 0; }
+  .day { min-height: 84px; border: 1px solid var(--line); border-radius: 8px; padding: 4px; overflow: hidden; }
+  .day.out { opacity: .35; }
+  .day.hoje { border-color: var(--acc); }
+  .dn { font-size: 12px; color: var(--mut); }
+  .chip { display: block; font-size: 11px; border-radius: 4px; padding: 1px 5px; margin-top: 2px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .s-publicado { background: var(--ok); } .s-pendente { background: var(--pend); }
+  .s-erro { background: var(--err); } .s-atrasado { background: var(--late); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--mut); font-weight: 500; font-size: 13px; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; color: #fff; }
+  .legenda { color: var(--mut); font-size: 13px; max-width: 420px; }
+  .erro { color: var(--err); font-size: 12px; }
+  .scroll { overflow-x: auto; }
+  @media (max-width: 600px) { .day { min-height: 56px; } .chip { font-size: 10px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Agendador ZYNIT</h1>
+  <p class="sub">Fila de posts do Instagram @zynit.oficial · horário de Brasília · <span id="atual">carregando…</span></p>
+
+  <div class="cards" id="cards"></div>
+
+  <section>
+    <div class="bar">
+      <button id="ant" aria-label="Mês anterior">‹</button>
+      <h2 id="mes" style="margin:0"></h2>
+      <button id="prox" aria-label="Próximo mês">›</button>
+    </div>
+    <div class="grid" id="cal"></div>
+  </section>
+
+  <section>
+    <h2>Posts</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Quando</th><th>Tipo</th><th>Status</th><th>Detalhe</th></tr></thead>
+      <tbody id="lista"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<script>
+const TZ = "America/Sao_Paulo";
+const NOMES = { feed: "Feed", carrossel: "Carrossel", story: "Story", reel: "Reel" };
+const STATUS = { publicado: "Publicado", pendente: "Agendado", erro: "Erro", atrasado: "Atrasado" };
+let itens = [], ref = new Date();
+
+const fmt = (d, o) => new Intl.DateTimeFormat("pt-BR", { timeZone: TZ, ...o }).format(d);
+const chaveDia = d => fmt(d, { year: "numeric", month: "2-digit", day: "2-digit" });
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function carregar() {
+  try {
+    const r = await fetch("fila.json?t=" + Date.now());
+    const dados = await r.json();
+    itens = dados.filter(i => STATUS[i.status]).map(i => ({ ...i, quando: new Date(i.data_hora) }))
+      .sort((a, b) => a.quando - b.quando);
+    document.getElementById("atual").textContent = "atualizado " + fmt(new Date(), { dateStyle: "short", timeStyle: "short" });
+  } catch (e) {
+    document.getElementById("atual").textContent = "não foi possível carregar a fila";
+  }
+  desenhar();
+}
+
+function desenhar() { cards(); calendario(); lista(); }
+
+function cards() {
+  const n = s => itens.filter(i => i.status === s).length;
+  const prox = itens.find(i => i.status === "pendente");
+  const html = [
+    ["Agendados", n("pendente")], ["Publicados", n("publicado")], ["Com erro", n("erro") + n("atrasado")],
+    ["Próximo post", prox ? fmt(prox.quando, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"]
+  ].map(([l, v]) => `<div class="card"><div class="num">${esc(v)}</div><div class="lbl">${l}</div></div>`).join("");
+  document.getElementById("cards").innerHTML = html;
+}
+
+function calendario() {
+  const ano = ref.getFullYear(), mes = ref.getMonth();
+  document.getElementById("mes").textContent = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(ref);
+  const primeiro = new Date(ano, mes, 1), inicio = new Date(ano, mes, 1 - primeiro.getDay());
+  const hoje = chaveDia(new Date());
+  const porDia = {};
+  itens.forEach(i => (porDia[chaveDia(i.quando)] ||= []).push(i));
+  let h = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(d => `<div class="dow">${d}</div>`).join("");
+  for (let k = 0; k < 42; k++) {
+    const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + k);
+    const ch = chaveDia(new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12));
+    const chips = (porDia[ch] || []).map(i =>
+      `<span class="chip s-${i.status}" title="${esc(NOMES[i.tipo])} · ${esc(STATUS[i.status])}">${fmt(i.quando, { hour: "2-digit", minute: "2-digit" })} ${esc(NOMES[i.tipo] || i.tipo)}</span>`).join("");
+    h += `<div class="day${d.getMonth() !== mes ? " out" : ""}${ch === hoje ? " hoje" : ""}"><div class="dn">${d.getDate()}</div>${chips}</div>`;
+  }
+  document.getElementById("cal").innerHTML = h;
+}
+
+function lista() {
+  document.getElementById("lista").innerHTML = itens.map(i => {
+    // legenda só aparece depois de publicado
+    const det = i.status === "publicado" ? `<div class="legenda">${esc((i.legenda || "").slice(0, 140))}</div>`
+      : i.status === "erro" || i.status === "atrasado" ? `<div class="erro">${esc((i.erro || "").slice(0, 160))}</div>` : "";
+    return `<tr><td>${fmt(i.quando, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td>
+      <td>${esc(NOMES[i.tipo] || i.tipo)}${i.midias.length > 1 ? ` (${i.midias.length})` : ""}</td>
+      <td><span class="tag s-${i.status}">${STATUS[i.status]}</span></td><td>${det}</td></tr>`;
+  }).join("") || `<tr><td colspan="4" class="lbl">Fila vazia.</td></tr>`;
+}
+
+document.getElementById("ant").onclick = () => { ref = new Date(ref.getFullYear(), ref.getMonth() - 1, 1); calendario(); };
+document.getElementById("prox").onclick = () => { ref = new Date(ref.getFullYear(), ref.getMonth() + 1, 1); calendario(); };
+carregar();
+</script>
+</body>
+</html>
