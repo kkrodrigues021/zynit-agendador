@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Publica no Instagram os itens vencidos de fila.json (API oficial da Meta).
 
-Variáveis de ambiente: IG_USER_ID, IG_TOKEN, GITHUB_REPOSITORY (owner/repo), GITHUB_TOKEN,
-CONTEUDO_DIR (pasta onde está o repositório privado de conteúdo; padrão: ./conteudo).
+Variáveis de ambiente: IG_USER_ID, IG_TOKEN, GITHUB_REPOSITORY (owner/repo).
 Uso: python publicar.py [--dry-run]
 """
 import json
@@ -14,24 +13,17 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-import staging
-
 API = os.environ.get("IG_API", "https://graph.instagram.com/v25.0")
-AQUI = os.path.dirname(os.path.abspath(__file__))
-CONTEUDO = os.environ.get("CONTEUDO_DIR") or os.path.join(AQUI, "conteudo")
-FILA = os.path.join(CONTEUDO, "fila.json")
+FILA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fila.json")
 TOLERANCIA = timedelta(hours=6)  # item mais atrasado que isso não é publicado
 DRY = "--dry-run" in sys.argv
 
 
-def urls_publicas(midias):
-    """Valida os arquivos e os coloca num link público temporário (branch staging)."""
-    for m in midias:
-        if m.lower().endswith(".png"):
-            raise RuntimeError(f"{m}: a API só aceita imagem JPEG; converta para .jpg")
-        if not os.path.isfile(os.path.join(CONTEUDO, m)):
-            raise RuntimeError(f"{m}: arquivo não encontrado no repositório de conteúdo")
-    return staging.enviar([os.path.join(CONTEUDO, m) for m in midias], os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_TOKEN"])
+def url_midia(caminho):
+    if caminho.lower().endswith(".png"):
+        raise RuntimeError(f"{caminho}: a API só aceita imagem JPEG; converta para .jpg")
+    repo = os.environ.get("GITHUB_REPOSITORY", "OWNER/REPO")
+    return f"https://raw.githubusercontent.com/{repo}/main/{caminho}"
 
 
 def chamar(metodo, caminho, params):
@@ -68,7 +60,7 @@ def criar(uid, params):
 def publicar_item(item):
     uid = os.environ["IG_USER_ID"]
     tipo, midias, legenda = item["tipo"], item["midias"], item.get("legenda", "")
-    urls = urls_publicas(midias)
+    urls = [url_midia(m) for m in midias]
     if tipo == "feed":
         cid = criar(uid, {"image_url": urls[0], "caption": legenda})
     elif tipo == "carrossel":
@@ -101,7 +93,6 @@ def main():
         fila = json.load(f)
     agora = datetime.now(timezone.utc)
     mudou = False
-    usou_staging = False
     for item in fila:
         if item.get("status") != "pendente":
             continue
@@ -117,7 +108,6 @@ def main():
         if DRY:
             print(f"[dry-run] publicaria {item['id']} ({item['tipo']}) com {len(item['midias'])} mídia(s)")
             continue
-        usou_staging = True
         try:
             item["media_id"] = publicar_item(item)
             item["status"] = "publicado"
@@ -128,11 +118,6 @@ def main():
             item["erro"] = str(e)
             print(f"[erro] {item['id']}: {e}")
         mudou = True
-    if usou_staging:
-        try:
-            staging.limpar(os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_TOKEN"])
-        except Exception as e:  # não derruba o status já obtido
-            print("aviso: não consegui limpar a mídia temporária:", e)
     if mudou:
         with open(FILA, "w", encoding="utf-8") as f:
             json.dump(fila, f, ensure_ascii=False, indent=2)
