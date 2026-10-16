@@ -1,0 +1,29 @@
+name: Diagnostico de midia (temporario)
+on:
+  workflow_dispatch:
+    inputs:
+      media_id:
+        description: ID da midia publicada
+        required: true
+jobs:
+  ver:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar midia
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          MID: ${{ inputs.media_id }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.parse
+          base = "https://graph.instagram.com/v25.0/" + os.environ["MID"]
+          q = urllib.parse.urlencode({"fields": "media_type,media_product_type,is_shared_to_feed,permalink,thumbnail_url,media_url,timestamp", "access_token": os.environ["IG_TOKEN"]})
+          d = json.load(urllib.request.urlopen(base + "?" + q))
+          for k in ("media_type", "media_product_type", "is_shared_to_feed", "permalink", "timestamp"):
+              print(k, "=", d.get(k))
+          print("tem media_url:", bool(d.get("media_url")), "| tem thumbnail_url:", bool(d.get("thumbnail_url")))
+          if d.get("media_url"):
+              req = urllib.request.Request(d["media_url"], method="HEAD")
+              r = urllib.request.urlopen(req)
+              print("media_url HTTP", r.status, r.headers.get("Content-Type"), r.headers.get("Content-Length"))
+          PY
